@@ -1,0 +1,52 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sessions": {
+      "$sid": {
+        ".read": "auth != null",
+        ".write": "auth != null && !newData.exists() && data.child('info/ownerUid').val() === auth.uid",
+        "info": {
+          ".validate": "newData.hasChildren(['name','ownerUid','createdAt','startDate','endDate','startTime','endTime','intervalMinutes','minimumDuration','minimumAttendance','status'])",
+          ".write": "auth != null && (!data.exists() ? newData.child('ownerUid').val() === auth.uid : data.child('ownerUid').val() === auth.uid)",
+          "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
+          "ownerUid": { ".validate": "newData.isString() && (data.exists() ? data.val() === newData.val() : newData.val() === auth.uid)" },
+          "createdAt": { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
+          "startDate": { ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
+          "endDate": { ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
+          "startTime": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 1440" },
+          "endTime": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 1440" },
+          "intervalMinutes": { ".validate": "newData.val() === 15 || newData.val() === 30 || newData.val() === 60" },
+          "minimumDuration": { ".validate": "newData.isNumber() && newData.val() >= 15 && newData.val() <= 1440" },
+          "minimumAttendance": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+          "preferredDays": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "prefStart": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440" },
+          "prefEnd": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1440" },
+          "status": { ".validate": "newData.val() === 'open' || newData.val() === 'closed'" },
+          "$other": { ".validate": false }
+        },
+        "participants": {
+          "$uid": {
+            ".write": "auth != null && ((auth.uid === $uid && (data.exists() || root.child('sessions/' + $sid + '/info/status').val() === 'open')) || (root.child('sessions/' + $sid + '/info/ownerUid').val() === auth.uid && !newData.exists()))",
+            ".validate": "newData.hasChildren(['name','joinedAt'])",
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+            "joinedAt": { ".validate": "newData.isNumber() && (!data.exists() || data.val() === newData.val())" },
+            "updatedAt": { ".validate": "newData.isNumber()" },
+            "availability": {
+              "$date": {
+                ".validate": "$date.matches(/^\\d{4}-\\d{2}-\\d{2}$/)",
+                "$id": {
+                  ".validate": "newData.hasChildren(['start','end']) && newData.child('end').val() > newData.child('start').val()",
+                  "start": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 1440" },
+                  "end": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 1440" },
+                  "$other": { ".validate": false }
+                }
+              }
+            },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}
